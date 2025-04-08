@@ -1,10 +1,10 @@
+# WIFIHacker 🔓📶
+
+An all-in-one WiFi pentesting tool designed to automate and simplify WiFi security auditing and attacks — phishing, SSID spam, DoS, and more. Built with ❤️ by [@karthithehacker](https://github.com/karthi-the-hacker)
 
 
 ![Logo](https://github.com/karthi-the-hacker/WIFIHacker/raw/refs/heads/main/images/Wifi_Haker.webp)
 
-# WIFIHacker 🔓📶
-
-An all-in-one WiFi pentesting tool designed to automate and simplify WiFi security auditing and attacks — phishing, SSID spam, DoS, and more. Built with ❤️ by [@karthithehacker](https://github.com/karthi-the-hacker)
 
 > ⚠️ Educational use only. Use responsibly and with permission.
 
