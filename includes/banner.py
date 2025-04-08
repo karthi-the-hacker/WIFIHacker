@@ -114,7 +114,7 @@ def wifiphish(inf,attack_mode,wifiname):
 [bold]Stop       :[/bold] CTRL+C 
 """, title="🚨 Launching Wifi Attack", border_style="red"))
      
-def wifiphish(interface, attack_mode, ssid_name, ssid_count):
+def wifispam(interface, attack_mode, ssid_name, ssid_count):
      console.print(Panel.fit(f"""
 [bold]Attack Mode:[/bold] {attack_mode}
 [bold]Device     :[/bold] {interface}

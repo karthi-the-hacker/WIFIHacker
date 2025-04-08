@@ -72,3 +72,4 @@ sleep 2
 
 echo "[*] Launching captive portal with template '$TEMPLATE'..."
 sudo python3 AttackModes/captiveportal.py "$TEMPLATE_DIR" "$INTERFACE" "$WIFINAME"
+

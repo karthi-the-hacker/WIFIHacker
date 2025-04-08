@@ -94,6 +94,6 @@ def main(interface):
     ssid_count = get_ssid_count()
     ssid_file = generate_ssid_file(ssid_name, ssid_count)
     banner.show_banner()
-    banner.wifiphish(interface,attack_mode,ssid_name,ssid_count)
+    banner.wifispam(interface,attack_mode,ssid_name,ssid_count)
     launch_attack(f"{interface}", ssid_file)
 
