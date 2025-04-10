@@ -5,3 +5,4 @@ __pycache__/
 *.conf
 *.log 
 templatess
+*.json
