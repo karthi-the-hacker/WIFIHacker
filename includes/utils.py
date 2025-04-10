@@ -30,9 +30,23 @@ from datetime import datetime
 import os
 import json
 from shutil import which
+import subprocess
 
 
 console = Console()
+
+
+def kill_port(port):
+    try:
+        # macOS/Linux
+        output = subprocess.check_output(f"lsof -t -i:{port}", shell=True)
+        pids = output.decode().strip().split("\n")
+        for pid in pids:
+            subprocess.run(["kill", "-9", pid])
+            print(f"[!] Killed process {pid} on port {port}")
+    except subprocess.CalledProcessError:
+        pass  # No process is using the port
+
 
 def get_wifi_interfaces():
     import subprocess

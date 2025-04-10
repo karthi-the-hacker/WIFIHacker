@@ -46,6 +46,7 @@ def main():
 
         if choice == 1:
             import os
+            utils.kill_port(80)
             banner.show_banner()
             interfaces = utils.get_wifi_interfaces()
             if not interfaces:
