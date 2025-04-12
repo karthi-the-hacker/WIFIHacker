@@ -1,0 +1,4 @@
+rich
+scapy
+colorama
+pyfiglet
