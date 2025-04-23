@@ -128,7 +128,7 @@ From the menu, choose the attack you want:
 ```
 1. 📡 Wifi Phishing
 2. 📶 Wifi SPAM
-3. 🚫 Wifi DoS (Coming Soon)
+3. 🚫 Wifi Deauth
 4. 📘 Learn Wifi Hacking (Coming Soon)
 5. 🔐 View Captured Credentials
 6. ❌ Exit
