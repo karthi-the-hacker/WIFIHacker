@@ -27,6 +27,7 @@ import sys
 from includes import banner
 from includes import utils
 from AttackModes import spam
+from AttackModes import deauth
 from includes.menu import main_menu
 from rich.console import Console
 from rich.panel import Panel
@@ -90,6 +91,23 @@ def main():
                 exit()
             
             spam.main(interface)
+        elif choice == 3:
+            banner.show_banner()
+            interfaces = utils.get_wifi_interfaces()
+            if not interfaces:
+                banner.nowifi()
+            
+            banner.wifi_available(interfaces)
+            selected = input("🛜  Enter your WiFi interface (number): ").strip()
+            try:
+                if selected.strip() == "0":
+                    continue  
+                interface = interfaces[int(selected) - 1]
+            except (IndexError, ValueError):
+                banner.invalid_Selection()
+                exit()
+            
+            deauth.start_deauth(interface)
 
         elif choice == 5:
             banner.show_credentials()

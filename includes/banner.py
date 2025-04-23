@@ -122,3 +122,16 @@ def wifispam(interface, attack_mode, ssid_name, ssid_count):
 [bold]Wifi count :[/bold] {ssid_count}
 [bold]Stop       :[/bold] CTRL+C 
 """, title="🚨 Launching Wifi Attack", border_style="red"))
+     
+
+def show_wifi_targets(wifi_targets):
+    show_banner()
+    menu = ["📡 [bold yellow]Available WiFi Targets:[/bold yellow]\n"]
+    
+    for i, (bssid, essid, channel) in enumerate(wifi_targets, start=1):
+        menu.append(f"[cyan]{i}.[/cyan] [bold white]{essid:<25}[/bold white] [dim]{bssid}[/dim]")
+    
+    menu.append("[bold red]0.[/bold red] Back to Main Menu")
+    panel_content = "\n".join(menu)
+    
+    console.print(Panel.fit(panel_content, title="[bold green]Choose Target[/bold green]", style="bold green"))
