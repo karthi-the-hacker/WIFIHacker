@@ -44,7 +44,7 @@ def main_menu():
     table.add_column("Option", style="bold white")
     table.add_row("1", "📡 Wifi Phishing")
     table.add_row("2", "📶 Wifi SPAM ")
-    table.add_row("3", "🚫 Wifi DoS (Coming Soon)")
+    table.add_row("3", "🚫 Wifi Deauth (Coming Soon)")
     table.add_row("4", "📘 Learn Wifi Hacking (Coming Soon)")
     table.add_row("5", "🔐 View Captured Credentials")
     table.add_row("6", "❌ Exit")
