@@ -75,12 +75,16 @@ pip install -r requirements.txt
 Make sure these tools are installed:
 
 - `mdk4` – for SSID spamming  
-- `airmon-ng` – to enable monitor mode on your wireless interface  
+- `airmon-ng` – to enable monitor mode on your wireless interface
+- `hostapd` - for Creating Fake Wifi
+- `dnsmasq` - for creating captive portal dns
 
 Install them on Debian/Kali Linux:
 
 ```bash
 sudo apt install mdk4 aircrack-ng
+sudo apt-get install hostapd
+sudo apt-get install dnsmasq
 ```
 
 
